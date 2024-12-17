@@ -12,7 +12,7 @@ type MyTime = {
 
 type Workday = {
     day: MyDay;
-    workinghours: number;
+    workinghours?: number;
 };
 
 type Workweek = {
@@ -33,7 +33,6 @@ const readByLine = (path:string) => Deno.readTextFile(path).then((message) => {
                         month: Number(element.substring(4,6)),
                         day: Number(element.substring(6,8)),
                     },
-                workinghours: 0
             };
             const currenttime:MyTime = {               
                 hours: Number(element.substring(8,10)),
@@ -46,7 +45,7 @@ const readByLine = (path:string) => Deno.readTextFile(path).then((message) => {
 
 });
 
-readByLine("/media/vincent/1817-19D5/Work/log/2024_12_16log.text");
+readByLine("testdates.text");
 stdin.on('data', function(data) {
     let path = data.toString();
     path = path.replace(/(\r\n|\n|\r)/gm, "");
