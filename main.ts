@@ -9,10 +9,15 @@ type MyTime = {
     minutes:number;
     seconds:number;
 };
+type Entry = {
+    time: MyTime;
+    data: string;
+}
 
 type Workday = {
     day: MyDay;
     workinghours?: number;
+    entries: Entry[];
 };
 
 type Workweek = {
@@ -22,32 +27,26 @@ type Workweek = {
 
 // testdates.text
 const readByLine = (path:string) => Deno.readTextFile(path).then((message) => {
-
-    const array = message.split(/[\r\n]+/);
-    array.forEach(element => {
-        if(element.length > 1){
-            let currentworkday:Workday = {
-                day:
-                    {
-                        year: Number(element.substring(0,4)),
-                        month: Number(element.substring(4,6)),
-                        day: Number(element.substring(6,8)),
-                    },
-            };
-            const currenttime:MyTime = {               
-                hours: Number(element.substring(8,10)),
-                minutes: Number(element.substring(11,13)),
-                seconds: Number(element.substring(14,16)),
-            };
-            
-        };
-    });
+    const data = message.match(/[\r\n]+/);
+    console.log(data)
 
 });
 
+
+//readByLine("testdates.text");
 readByLine("testdates.text");
-stdin.on('data', function(data) {
+/*stdin.on('data', function(data) {
     let path = data.toString();
     path = path.replace(/(\r\n|\n|\r)/gm, "");
     readByLine(path)
-});
+});*/
+
+/*
+            year: Number(element.substring(0,4)),
+            month: Number(element.substring(4,6)),
+t            day: Number(element.substring(6,8)),
+            hours: Number(element.substring(8,10)),
+            minutes: Number(element.substring(11,13)),
+             seconds: Number(element.substring(14,16)),
+
+             */
