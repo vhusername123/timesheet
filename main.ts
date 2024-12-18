@@ -1,35 +1,69 @@
 import { stdin } from "node:process";
-type MyDay = {
-    year:number;
-    month:number;
-    day:number;
-};
-type MyTime = {
-    hours:number;
-    minutes:number;
-    seconds:number;
-};
-type Entry = {
-    time: MyTime;
-    data: string;
+
+
+
+
+type Workmonth = {
+    name: number,
+    month: Map<number,number>,
+    accuworktime: number
 }
-
-type Workday = {
-    day: MyDay;
-    workinghours?: number;
-    entries: Entry[];
-};
-
-type Workweek = {
-    week: Workday[];
-    sumWorkinghours: number;
-};
 
 // testdates.text
 const readByLine = (path:string) => Deno.readTextFile(path).then((message) => {
-    const data = message.match(/[\r\n]+/);
-    console.log(data)
-
+    const data = message.split(/[\r\n]+/);
+    const month = data[0].match(/-(\d\d)-/) ?? [0,0];
+    let lastDate:Date;
+    let lastDesc:string;
+    let curWorkday:Date;
+    let myWorkmonth:Workmonth={
+        name: Number(month[1]),
+        month: new Map<number,number>(),
+        accuworktime: 0
+    };
+    data.forEach((entry:string) => {
+    const matches = entry.match(/(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d) (.*)/);
+        if(matches){
+            const [,datetime,description] = matches;
+            const curDate = new Date(datetime);
+            let onbreak:boolean = false;
+            const curDescription = description.trimEnd();
+            const curWorkday = curDate.getDate();
+            switch(curDescription){
+                case "start": {
+                    onbreak = false;
+                    break;
+                }
+                case "break": {
+                    const worktime = myWorkmonth.month.get(curWorkday) ?? 0;
+                    myWorkmonth.month?.set(curWorkday,worktime + (curDate.getTime() - lastDate.getTime()))
+                    onbreak = true;
+                    break;
+                }
+                case "end": {   
+                    onbreak = false;
+                    const worktime = myWorkmonth.month.get(curWorkday) ?? 0;
+                    myWorkmonth.month?.set(curWorkday,worktime + (curDate.getTime() - lastDate.getTime()))
+                    break;
+                }
+                default: {
+                    if(!onbreak){
+                        const worktime = myWorkmonth.month.get(curWorkday) ?? 0;
+                        myWorkmonth.month?.set(curWorkday,worktime + (curDate.getTime() - lastDate.getTime()))
+                    }{
+                        onbreak = false;
+                    }
+                    break;
+                }
+            }
+            lastDate = curDate;
+        }
+    });
+    myWorkmonth.month.forEach((indWorktime) => {
+        myWorkmonth.accuworktime = myWorkmonth.accuworktime + indWorktime;
+    });
+    myWorkmonth.accuworktime = (myWorkmonth.accuworktime / 1000 / 60 / 60)
+    console.log(myWorkmonth);
 });
 
 
@@ -40,13 +74,3 @@ readByLine("testdates.text");
     path = path.replace(/(\r\n|\n|\r)/gm, "");
     readByLine(path)
 });*/
-
-/*
-            year: Number(element.substring(0,4)),
-            month: Number(element.substring(4,6)),
-t            day: Number(element.substring(6,8)),
-            hours: Number(element.substring(8,10)),
-            minutes: Number(element.substring(11,13)),
-             seconds: Number(element.substring(14,16)),
-
-             */
