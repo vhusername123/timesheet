@@ -1,29 +1,29 @@
+import { dir, dir } from "node:console";
 import { stdin } from "node:process";
 
 
 
 
-type Workmonth = {
-    name: number,
+type Worksheet = {
+    name: string,
     month: Map<number,number>,
+    desc: Map<Date,string>,
     accuworktime: number
 }
 
 // testdates.text
-const readByLine = (path:string) => Deno.readTextFile(path).then((message) => {
+const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => {
     const data = message.split(/[\r\n]+/);
-    const month = data[0].match(/-(\d\d)-/) ?? [0,0];
     let lastDate:Date;
     let onbreak:boolean = true;
-    let lastDesc:string;
-    let curWorkday:Date;
-    let myWorkmonth:Workmonth={
-        name: Number(month[1]),
+    const curWorksheet:Worksheet={
+        name: path,
         month: new Map<number,number>(),
+        desc: new Map<Date,string>(),
         accuworktime: 0
     };
     data.forEach((entry:string) => {
-    const matches = entry.match(/(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d) (.*)/);
+        const matches = entry.match(/(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d) (.*)/);
         if(matches){
             const [,datetime,description] = matches;
             const curDate = new Date(datetime);
@@ -31,46 +31,54 @@ const readByLine = (path:string) => Deno.readTextFile(path).then((message) => {
             const curWorkday = curDate.getDate();
             switch(curDescription){
                 case "break": {
-                    const worktime = myWorkmonth.month.get(curWorkday) ?? 0;
-                    myWorkmonth.month?.set(curWorkday,calcpasstime(worktime, curDate))
+                    const worktime = curWorksheet.month.get(curWorkday) ?? 0;
+                    curWorksheet.month.set(curWorkday,calcpasstime(worktime, curDate))
                     onbreak = true;
                     break;
                 }
                 case "end": {   
                     onbreak = true;
-                    const worktime = myWorkmonth.month.get(curWorkday) ?? 0;
-                    myWorkmonth.month?.set(curWorkday,calcpasstime(worktime, curDate))
+                    const worktime = curWorksheet.month.get(curWorkday) ?? 0;
+                    curWorksheet.month.set(curWorkday,calcpasstime(worktime, curDate))
                     break;
                 }
                 default: {
                     if(!onbreak){
-                        const worktime = myWorkmonth.month.get(curWorkday) ?? 0;
-                        myWorkmonth.month?.set(curWorkday,calcpasstime(worktime, curDate))
+                        const worktime = curWorksheet.month.get(curWorkday) ?? 0;
+                        curWorksheet.month.set(curWorkday,calcpasstime(worktime, curDate))
                     }{
                         onbreak = false;
                     }
                     break;
                 }
             }
+            curWorksheet.desc.set(curDate,curDescription);
             lastDate = curDate;
         }
-
         function calcpasstime(worktime: number, curDate: Date): number {
           return worktime + ((curDate.getTime() - lastDate.getTime()) / 1000);
         }
+
     });
-    myWorkmonth.month.forEach((indWorktime) => {
-        myWorkmonth.accuworktime = myWorkmonth.accuworktime + indWorktime;
+    curWorksheet.month.forEach((indWorktime) => {
+        curWorksheet.accuworktime = curWorksheet.accuworktime + indWorktime;
     });
-    myWorkmonth.accuworktime = ((myWorkmonth.accuworktime / 60) / 60)
-    console.log(myWorkmonth);
+    curWorksheet.accuworktime = ((curWorksheet.accuworktime / 60) / 60)
+    return curWorksheet;
 });
 
 
-//readByLine("testdates.text");
-readByLine("testdates.text");
-/*stdin.on('data', function(data) {
-    let path = data.toString();
-    path = path.replace(/(\r\n|\n|\r)/gm, "");
-    readByLine(path)
-});*/
+
+const dir = Deno.cwd().replaceAll('\\','/') + '/';
+for await (const directory of Deno.readDir(dir)) { 
+    if (!directory.isFile){
+        continue
+    };
+    if (!(directory.name.split(".")[1] == "text")){
+        continue
+    };
+    const fullpath = dir + directory.name;
+    getWorksheet(fullpath).then((message) => {
+        console.log(message);
+    });
+};
