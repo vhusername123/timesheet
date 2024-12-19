@@ -15,8 +15,6 @@ function getDateFromDay(year:number, dayOfYear:number) {
     return startOfYear;
 }
 
-
-
 // testdates.text
 const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => {
     const data = message.split(/[\r\n]+/);
@@ -34,27 +32,15 @@ const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => 
             const curDate = new Date(datetime);
             const curDescription = description.trimEnd();
             const curWorkday:number = getDayOfYear(curDate);
-            switch(curDescription){
-                case "break": {
-                    const worktime = curWorksheet.date.get(curWorkday) ?? 0;
+            const worktime = curWorksheet.date.get(curWorkday) ?? 0;
+            if((curDescription == "break") || (curDescription == "end")){
+                curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate));
+                onbreak = true;
+            }else{
+                if(!onbreak){
                     curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate))
-                    onbreak = true;
-                    break;
-                }
-                case "end": {   
-                    onbreak = true;
-                    const worktime = curWorksheet.date.get(curWorkday) ?? 0;
-                    curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate))
-                    break;
-                }
-                default: {
-                    if(!onbreak){
-                        const worktime = curWorksheet.date.get(curWorkday) ?? 0;
-                        curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate))
-                    }{
-                        onbreak = false;
-                    }
-                    break;
+                }else{
+                    onbreak = false;
                 }
             }
             lastDate = curDate;
@@ -62,7 +48,6 @@ const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => 
         function calcpasstime(worktime: number, curDate: Date): number {
           return worktime + ((curDate.getTime() - lastDate.getTime()) / 1000);
         }
-
     });
     curWorksheet.date.forEach((indWorktime) => {
         curWorksheet.accuworktime = curWorksheet.accuworktime + indWorktime;
