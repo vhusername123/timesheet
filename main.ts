@@ -1,9 +1,3 @@
-import { dir, dir } from "node:console";
-import { stdin } from "node:process";
-
-
-
-
 type Worksheet = {
     name: string,
     month: Map<number,number>,
