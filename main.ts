@@ -1,9 +1,21 @@
+
 type Worksheet = {
     name: string,
-    month: Map<number,number>,
-    desc: Map<Date,string>,
+    date: Map<number,number>,
     accuworktime: number
 }
+function getDayOfYear(date:Date) {
+    const startOfYear = new Date(date.getFullYear(), 0, 1); 
+    const diffInMs:number = date.getTime() - startOfYear.getTime();
+    return Math.floor(diffInMs / (1000 * 60 * 60 * 24)) + 1;
+}
+function getDateFromDay(year:number, dayOfYear:number) {
+    const startOfYear = new Date(year, 0, 1);
+    startOfYear.setDate(startOfYear.getDate() + dayOfYear - 1);
+    return startOfYear;
+}
+
+
 
 // testdates.text
 const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => {
@@ -12,8 +24,7 @@ const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => 
     let onbreak:boolean = true;
     const curWorksheet:Worksheet={
         name: path,
-        month: new Map<number,number>(),
-        desc: new Map<Date,string>(),
+        date: new Map<number,number>(),
         accuworktime: 0
     };
     data.forEach((entry:string) => {
@@ -22,31 +33,30 @@ const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => 
             const [,datetime,description] = matches;
             const curDate = new Date(datetime);
             const curDescription = description.trimEnd();
-            const curWorkday = curDate.getDate();
+            const curWorkday:number = getDayOfYear(curDate);
             switch(curDescription){
                 case "break": {
-                    const worktime = curWorksheet.month.get(curWorkday) ?? 0;
-                    curWorksheet.month.set(curWorkday,calcpasstime(worktime, curDate))
+                    const worktime = curWorksheet.date.get(curWorkday) ?? 0;
+                    curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate))
                     onbreak = true;
                     break;
                 }
                 case "end": {   
                     onbreak = true;
-                    const worktime = curWorksheet.month.get(curWorkday) ?? 0;
-                    curWorksheet.month.set(curWorkday,calcpasstime(worktime, curDate))
+                    const worktime = curWorksheet.date.get(curWorkday) ?? 0;
+                    curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate))
                     break;
                 }
                 default: {
                     if(!onbreak){
-                        const worktime = curWorksheet.month.get(curWorkday) ?? 0;
-                        curWorksheet.month.set(curWorkday,calcpasstime(worktime, curDate))
+                        const worktime = curWorksheet.date.get(curWorkday) ?? 0;
+                        curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate))
                     }{
                         onbreak = false;
                     }
                     break;
                 }
             }
-            curWorksheet.desc.set(curDate,curDescription);
             lastDate = curDate;
         }
         function calcpasstime(worktime: number, curDate: Date): number {
@@ -54,7 +64,7 @@ const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => 
         }
 
     });
-    curWorksheet.month.forEach((indWorktime) => {
+    curWorksheet.date.forEach((indWorktime) => {
         curWorksheet.accuworktime = curWorksheet.accuworktime + indWorktime;
     });
     curWorksheet.accuworktime = ((curWorksheet.accuworktime / 60) / 60)
@@ -64,6 +74,8 @@ const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => 
 
 
 const dir = Deno.cwd().replaceAll('\\','/') + '/';
+
+console.log(dir)
 for await (const directory of Deno.readDir(dir)) { 
     if (!directory.isFile){
         continue
@@ -72,6 +84,7 @@ for await (const directory of Deno.readDir(dir)) {
         continue
     };
     const fullpath = dir + directory.name;
+    
     getWorksheet(fullpath).then((message) => {
         console.log(message);
     });
