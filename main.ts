@@ -1,66 +1,67 @@
 
-type Worksheet = {
-    name: string,
-    date: Map<number,number>,
-    accuworktime: number
-}
-function getDayOfYear(date:Date) {
-    const startOfYear = new Date(date.getFullYear(), 0, 1); 
-    const diffInMs:number = date.getTime() - startOfYear.getTime();
-    return Math.floor(diffInMs / (1000 * 60 * 60 * 24)) + 1;
-}
-function getDateFromDay(year:number, dayOfYear:number) {
-    const startOfYear = new Date(year, 0, 1);
-    startOfYear.setDate(startOfYear.getDate() + dayOfYear - 1);
-    return startOfYear;
-}
+type Entry = {
+    
+    begin: Date,
+    end: Date,
+    duration: number,
+    accumulated: number,
+    reference?: string,
+    description: string
 
+};
+function makeEntry(begin:Date,end:Date,duration:number,accumulated:number,description:string,reference?:string):Entry{
+    return {
+        begin: begin,
+        end: end,
+        duration: duration,
+        accumulated: accumulated,
+        reference: reference,
+        description: description
+    }
+}
 // testdates.text
 const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => {
+    const fileData:Entry[] = [];
     const data = message.split(/[\r\n]+/);
     let lastDate:Date;
+    let lastDesc:string;
     let onbreak:boolean = true;
-    const curWorksheet:Worksheet={
-        name: path,
-        date: new Map<number,number>(),
-        accuworktime: 0
-    };
+    let accuworkTime:number = 0;
     data.forEach((entry:string) => {
         const matches = entry.match(/(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d) (.*)/);
         if(matches){
             const [,datetime,description] = matches;
             const curDate = new Date(datetime);
             const curDescription = description.trimEnd();
-            const curWorkday:number = getDayOfYear(curDate);
-            const worktime = curWorksheet.date.get(curWorkday) ?? 0;
-            if((curDescription == "break") || (curDescription == "end")){
-                curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate));
+            if ((curDescription == "break") || (curDescription == "end")){
+                accuworkTime += calcpasstime(lastDate,curDate);
+                fileData.push(makeEntry(lastDate,curDate,calcpasstime(lastDate,curDate),Number(accuworkTime.toFixed(2)),lastDesc))
                 onbreak = true;
             }else{
                 if(!onbreak){
-                    curWorksheet.date.set(curWorkday,calcpasstime(worktime, curDate))
+                    accuworkTime += calcpasstime(lastDate,curDate);
+                    fileData.push(makeEntry(lastDate,curDate,calcpasstime(lastDate,curDate),Number(accuworkTime.toFixed(2)),lastDesc))
                 }else{
                     onbreak = false;
                 }
             }
+            lastDesc = curDescription;
             lastDate = curDate;
         }
-        function calcpasstime(worktime: number, curDate: Date): number {
-          return worktime + ((curDate.getTime() - lastDate.getTime()) / 1000);
-        }
+
     });
-    curWorksheet.date.forEach((indWorktime) => {
-        curWorksheet.accuworktime = curWorksheet.accuworktime + indWorktime;
-    });
-    curWorksheet.accuworktime = ((curWorksheet.accuworktime / 60) / 60)
-    return curWorksheet;
+    return fileData;
 });
 
 
+let dir = Deno.cwd().replaceAll('\\','/') + '/';
+//dir = "F:/Work/log"
 
-const dir = Deno.cwd().replaceAll('\\','/') + '/';
 
-console.log(dir)
+if (!dir.endsWith("/")) {
+    dir += "/";
+}
+
 for await (const directory of Deno.readDir(dir)) { 
     if (!directory.isFile){
         continue
@@ -69,8 +70,38 @@ for await (const directory of Deno.readDir(dir)) {
         continue
     };
     const fullpath = dir + directory.name;
-    
+    const csvFullpath = fullpath.replace(".text",".csv");
     getWorksheet(fullpath).then((message) => {
-        console.log(message);
+        Deno.writeTextFile(csvFullpath, convertEntriesToCSV(message));
     });
 };
+
+
+
+
+function calcpasstime(lastDate: Date, curDate: Date): number {
+    return roundUP((curDate.getTime() - lastDate.getTime()) / 1000 / 60 / 60,2);
+}
+
+
+function roundUP(number: number, precision: number): number {
+	const power = Math.pow(10, precision);
+
+  	return Math.ceil(number * power) / power;
+}
+
+
+function convertEntriesToCSV(entries: Entry[]): string {
+    const headers = ["begin", "end", "duration", "accumulated", "reference", "description"];
+    const rows = entries.map(entry => [
+        entry.begin.toISOString(),
+        entry.end.toISOString(),
+        entry.duration.toString(),
+        entry.accumulated.toString(),
+        entry.reference || "",
+        entry.description.toString().replace(/"/g, '""') 
+    ]);
+    const csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell}"`).join(","))].join("\n");
+
+    return csvContent;
+}
