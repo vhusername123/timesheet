@@ -35,12 +35,12 @@ const getWorksheet = (path:string) => Deno.readTextFile(path).then((message) => 
             const curDescription = description.trimEnd();
             if ((curDescription == "break") || (curDescription == "end")){
                 accuworkTime += calcpasstime(lastDate,curDate);
-                fileData.push(makeEntry(lastDate,curDate,calcpasstime(lastDate,curDate),Number(accuworkTime.toFixed(2)),lastDesc))
+                fileData.push(makeEntry(lastDate,curDate,Number(calcpasstime(lastDate,curDate).toFixed(2)),Number(accuworkTime.toFixed(2)),lastDesc))
                 onbreak = true;
             }else{
                 if(!onbreak){
                     accuworkTime += calcpasstime(lastDate,curDate);
-                    fileData.push(makeEntry(lastDate,curDate,calcpasstime(lastDate,curDate),Number(accuworkTime.toFixed(2)),lastDesc))
+                    fileData.push(makeEntry(lastDate,curDate,Number(calcpasstime(lastDate,curDate).toFixed(2)),Number(accuworkTime.toFixed(2)),lastDesc))
                 }else{
                     onbreak = false;
                 }
@@ -80,7 +80,7 @@ for await (const directory of Deno.readDir(dir)) {
 
 
 function calcpasstime(lastDate: Date, curDate: Date): number {
-    return roundUP((curDate.getTime() - lastDate.getTime()) / 1000 / 60 / 60,2);
+    return roundUP((curDate.getTime() - lastDate.getTime()) / 1000 / 60 / 5,0) / 12;
 }
 
 
