@@ -61,7 +61,7 @@ let dir = Deno.cwd().replaceAll('\\','/') + '/';
 if (!dir.endsWith("/")) {
     dir += "/";
 }
-
+Deno.mkdir("csv")
 for await (const directory of Deno.readDir(dir)) { 
     if (!directory.isFile){
         continue
@@ -70,7 +70,7 @@ for await (const directory of Deno.readDir(dir)) {
         continue
     };
     const fullpath = dir + directory.name;
-    const csvFullpath = fullpath.replace(".text",".csv");
+    const csvFullpath = dir + "csv/" + directory.name.replace(".text",".csv"); 
     getWorksheet(fullpath).then((message) => {
         Deno.writeTextFile(csvFullpath, convertEntriesToCSV(message));
     });

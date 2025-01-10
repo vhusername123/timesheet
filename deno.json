@@ -1,6 +1,9 @@
 {
   "tasks": {
-    "dev": "deno run -A --watch main.ts"
+    "dev": "deno run -A --watch main.ts",
+    "compileUnix": "deno compile --allow-read --allow-write --target=x86_64-unknown-linux-gnu -o out/main main.ts",
+    "compileWin": "deno compile --allow-read --allow-write --target x86_64-pc-windows-msvc -o out/main.exe main.ts",
+    "compileAll": "deno task compileUnix && deno task compileWin"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1"
