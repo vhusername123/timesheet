@@ -103,9 +103,6 @@ begin,end,duration,accumulated,reference,description
 "2025-01-01T13:00:00.000Z","2025-01-01T17:00:00.000Z","4.00","7.00","","Resume work"
 ```
 
-## License
-This script is open-source and available under the [MIT License](LICENSE).
-
 ---
 
 Contributions and suggestions are welcome! Feel free to submit an issue or pull request.
