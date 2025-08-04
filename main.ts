@@ -7,23 +7,7 @@ type Entry = {
   reference?: string;
   description: string;
 };
-function makeEntry(
-  begin: Date,
-  end: Date,
-  duration: number,
-  accumulated: number,
-  description: string,
-  reference?: string
-): Entry {
-  return {
-    begin: begin,
-    end: end,
-    duration: duration,
-    accumulated: accumulated,
-    reference: reference,
-    description: description,
-  };
-}
+
 // testdates.text
 const getWorksheet = (path: string) =>
   Deno.readTextFile(path).then((message) => {
@@ -42,26 +26,26 @@ const getWorksheet = (path: string) =>
         if (curDescription == "break" || curDescription == "end") {
           accuworkTime += calcpasstime(lastDate, curDate);
           fileData.push(
-            makeEntry(
-              lastDate,
-              curDate,
-              Number(calcpasstime(lastDate, curDate).toFixed(2)),
-              Number(accuworkTime.toFixed(2)),
-              lastDesc
-            )
+            {
+              begin: lastDate,
+              end: curDate,
+              duration: Number(calcpasstime(lastDate, curDate).toFixed(2)),
+              accumulated: Number(accuworkTime.toFixed(2)),
+              description: lastDesc
+            }
           );
           onbreak = true;
         } else {
           if (!onbreak) {
             accuworkTime += calcpasstime(lastDate, curDate);
             fileData.push(
-              makeEntry(
-                lastDate,
-                curDate,
-                Number(calcpasstime(lastDate, curDate).toFixed(2)),
-                Number(accuworkTime.toFixed(2)),
-                lastDesc
-              )
+              {
+              begin: lastDate,
+              end: curDate,
+              duration: Number(calcpasstime(lastDate, curDate).toFixed(2)),
+              accumulated: Number(accuworkTime.toFixed(2)),
+              description: lastDesc
+            }
             );
           } else {
             onbreak = false;
@@ -105,7 +89,6 @@ function calcpasstime(lastDate: Date, curDate: Date): number {
 
 function roundUP(number: number, precision: number): number {
   const power = Math.pow(10, precision);
-
   return Math.ceil(number * power) / power;
 }
 
