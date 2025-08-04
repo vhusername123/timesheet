@@ -1,4 +1,3 @@
-import { exists } from "jsr:@std/fs/exists";
 type Entry = {
   begin: Date;
   end: Date;
@@ -59,14 +58,11 @@ const getWorksheet = (path: string) =>
   });
 
 let dir = Deno.cwd().replaceAll("\\", "/") + "/";
-//dir = "F:/Work/log"
 
 if (!dir.endsWith("/")) {
   dir += "/";
 }
-if (!(await exists("./csv"))) {
-  Deno.mkdir("csv");
-}
+
 for await (const directory of Deno.readDir(dir)) {
   if (!directory.isFile) {
     continue;
